@@ -1,0 +1,53 @@
+name: HMHS Era Local-First CI
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Check out the repository code
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # Step 2: Set up the Python environment (or Node.js depending on your stack)
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-python-version: '3.11'
+        cache: 'pip'
+
+    # Step 3: Install local dependencies
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install flake8 pytest
+
+    # Step 4: Security Scan to ensure NO API KEYS or secrets are hardcoded
+    - name: Zero-API Compliance Check
+      name: Secret Detection Scan
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: ${{ github.event.repository.default_branch }}
+        head: HEAD
+        extra_args: --debug --only-verified
+
+    # Step 5: Lint code for errors
+    - name: Lint with flake8
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings.
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    # Step 6: Run local framework tests (Simulating local edge-model execution)
+    - name: Run Local Framework Tests
+      run: |
+        pytest
