@@ -1,0 +1,9 @@
+# Exclude model weights (Prevents accidentally pushing 4GB+ files)
+models/
+*.gguf
+
+# Python environment artifacts
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
